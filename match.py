@@ -237,12 +237,18 @@ class Match:
     def update(self):
         if self.state == self.S_KICKOFF:
             self.kickoff_timer -= 1
+            # Keep ball physics alive so it settles on the spot instead of
+            # floating frozen in the air during the countdown.
+            self.ball.update()
             if self.kickoff_timer <= 0:
                 self.state = self.S_PLAYING
             return
 
         if self.state == self.S_GOAL:
             self.goal_timer -= 1
+            # Let the ball fall naturally during the celebration (no "frozen
+            # in mid-air / lost gravity" look).
+            self.ball.update()
             self._tick_particles()
             if self.goal_timer <= 0:
                 if self.score_a >= self.goals_to_win or self.score_b >= self.goals_to_win:
@@ -253,6 +259,7 @@ class Match:
             return
 
         if self.state == self.S_DONE:
+            self.ball.update()
             return
 
         # AI
@@ -290,7 +297,7 @@ class Match:
                 self.score_b += 1
             self.last_scorer = scorer
             self.state = self.S_GOAL
-            self.goal_timer = 160
+            self.goal_timer = 120
             self._spawn_particles()
 
         self._tick_particles()
@@ -387,10 +394,14 @@ class Match:
         self.screen.blit(ov, (0, 0))
 
     def _overlay_kickoff(self):
-        if self.kickoff_timer > 40:
-            self._draw_overlay(80)
-            t = self.font_mid.render("COMEÇA O JOGO!", True, YELLOW)
-            self.screen.blit(t, t.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2)))
+        # Countdown 3 -> 2 -> 1 spanning the WHOLE kickoff so the field is
+        # never just sitting there frozen with no feedback.
+        self._draw_overlay(70)
+        n = max(1, min(3, self.kickoff_timer // 34 + 1))
+        c = self.font_hud.render(str(n), True, YELLOW)
+        self.screen.blit(c, c.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2 - 10)))
+        sub = self.font_sm.render("Preparar...", True, LIGHT_GRAY)
+        self.screen.blit(sub, sub.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2 + 55)))
 
     def _overlay_goal(self):
         self._draw_overlay(110)

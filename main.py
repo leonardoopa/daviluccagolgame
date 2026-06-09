@@ -37,7 +37,8 @@ class Button:
         surf.blit(ts, ts.get_rect(center=self.rect.center))
 
     def clicked(self, ev):
-        return ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1 and self._hov
+        return (ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1
+                and self.rect.collidepoint(ev.pos))
 
 
 class InputField:
